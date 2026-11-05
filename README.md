@@ -26,7 +26,7 @@ npx dyslexia-friendly-ui
 
 The installer will:
 
-1. Look for supported agents in your project and home folder.
+1. Look for supported agents in your project (or your home folder with `--global`).
 2. Show you what it found.
 3. Ask which ones to install for.
 4. Show a before-and-after for any file it edits.
@@ -69,14 +69,21 @@ Anything else: use `--path` to copy the skill to a folder you choose.
 
 ```bash
 npx dyslexia-friendly-ui                 # detect and install (interactive)
-npx dyslexia-friendly-ui --list          # show detected agents, change nothing
+npx dyslexia-friendly-ui --list          # show detected agents and installed state
 npx dyslexia-friendly-ui --agent cursor  # install for one agent
+npx dyslexia-friendly-ui --agent all     # install for every agent found here
 npx dyslexia-friendly-ui --global        # install in your home folder
 npx dyslexia-friendly-ui --dry-run       # show the changes, write nothing
-npx dyslexia-friendly-ui --yes           # skip prompts (never skips uninstall prompts)
+npx dyslexia-friendly-ui --yes           # skip install prompts
+npx dyslexia-friendly-ui --force         # overwrite a rule file that already exists
 npx dyslexia-friendly-ui --path ./folder # copy SKILL.md to any folder
+npx dyslexia-friendly-ui --version       # print the version
 npx dyslexia-friendly-ui uninstall       # remove what this tool installed
 ```
+
+`--yes` never overwrites a rule file that already exists with different content.
+Use `--force` when you mean it. `--agent all` falls back to every agent when
+none is detected.
 
 ## Safe by design
 
@@ -89,7 +96,8 @@ npx dyslexia-friendly-ui uninstall       # remove what this tool installed
   <!-- dyslexia-friendly-ui:end -->
   ```
 
-- **Approval before removal:** `uninstall` lists each file or block and asks before deleting.
+- **Approval before removal:** `uninstall` lists each file or block and asks before deleting. `--yes` confirms the deletions.
+- **Your edits survive:** a rule file that already exists with different content is left alone unless you pass `--force`.
 - **No network calls** at install time. The skill ships inside the package.
 - **No telemetry.**
 
@@ -97,10 +105,10 @@ npx dyslexia-friendly-ui uninstall       # remove what this tool installed
 
 ```
 dyslexia-friendly-ui/
-│ ├─ bin/cli.js           # the whole CLI (no dependencies)
-│ ├─ skill/SKILL.md       # the skill itself
-│ ├─ tests/smoke.js       # `npm test` check
-│ ├─ AGENT_INSTALL.md     # instructions for AI agents
+├─ bin/cli.js           # the whole CLI (no dependencies)
+├─ skill/SKILL.md       # the skill itself
+├─ tests/smoke.js       # `npm test` check
+├─ AGENT_INSTALL.md     # instructions for AI agents
 ├─ package.json
 ├─ LICENSE
 └─ README.md
@@ -113,7 +121,7 @@ Only the fields that matter here. Check each against the current npm docs.
 ```json
 {
   "name": "dyslexia-friendly-ui",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Install the dyslexia-friendly UI skill into your AI coding agent.",
   "bin": { "dyslexia-friendly-ui": "bin/cli.js" },
   "files": ["bin", "skill", "AGENT_INSTALL.md", "LICENSE"],

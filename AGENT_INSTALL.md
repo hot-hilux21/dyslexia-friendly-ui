@@ -28,11 +28,16 @@ You are an AI coding agent. Follow these steps to install the
 
 4. **Install after approval.**
    - Your own agent only: `npx dyslexia-friendly-ui --agent <name>`
+   - Every agent found: `npx dyslexia-friendly-ui --agent all`
+   - No prompt wanted: add `--yes`
    - Home folder instead of project: add `--global`
    - Unknown agent: `npx dyslexia-friendly-ui --path <folder>`
 
+   If a rule file already exists with different content, the CLI skips it.
+   Read the skip message to the user and only pass `--force` if they say yes.
+
 5. **Verify.**
-   Confirm the skill file or marked block now exists.
+   Run `npx dyslexia-friendly-ui --list` and confirm each target says `installed`.
    Report exactly which files changed.
    If you cannot confirm it, say so.
 
@@ -46,3 +51,4 @@ and report testing honestly.
 
 Run `npx dyslexia-friendly-ui uninstall`.
 It lists each item and asks for approval. Pass that approval step to the user.
+Add `--yes` only after the user approves the listed items.
