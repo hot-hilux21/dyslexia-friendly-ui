@@ -133,7 +133,7 @@ async function interactiveSelect(items, preselected) {
     items.forEach((k) => (allOn ? selected.delete(k) : selected.add(k)));
   };
   const render = () => {
-    process.stdout.write("\\x1b[2J\\x1b[H");
+    process.stdout.write("\x1b[2J\x1b[H");
     console.log("Select agents to install (↑/↓ move, space toggle, a all, Enter confirm, q cancel)\\n");
     items.forEach((k, i) => {
       const mark = selected.has(k) ? "x" : " ";
@@ -145,18 +145,18 @@ async function interactiveSelect(items, preselected) {
   return new Promise((resolve) => {
     const onData = (ch) => {
       if (ch === "\\u0003") { cleanup(); resolve([]); return; }
-      if (ch === "\\x1b[A") { cursor = (cursor - 1 + items.length) % items.length; render(); }
-      else if (ch === "\\x1b[B") { cursor = (cursor + 1) % items.length; render(); }
+      if (ch === "\x1b[A") { cursor = (cursor - 1 + items.length) % items.length; render(); }
+      else if (ch === "\x1b[B") { cursor = (cursor + 1) % items.length; render(); }
       else if (ch === " ") { toggle(items[cursor]); render(); }
       else if (ch === "a") { toggleAll(); render(); }
       else if (ch === "\\r" || ch === "\\n") { cleanup(); resolve(Array.from(selected)); }
-      else if (ch === "q" || ch === "\\x1b") { cleanup(); resolve([]); }
+      else if (ch === "q" || ch === "\x1b") { cleanup(); resolve([]); }
     };
     const cleanup = () => {
       process.stdin.setRawMode(false);
       process.stdin.pause();
       process.stdin.removeListener("data", onData);
-      process.stdout.write("\\x1b[2J\\x1b[H");
+      process.stdout.write("\x1b[2J\x1b[H");
     };
     process.stdin.on("data", onData);
     render();
@@ -171,7 +171,7 @@ async function confirmMenu(selected) {
   process.stdin.resume();
   process.stdin.setEncoding("utf8");
   const render = () => {
-    process.stdout.write("\\x1b[2J\\x1b[H");
+    process.stdout.write("\x1b[2J\x1b[H");
     console.log("Selected agents:\\n");
     selected.forEach((k) => console.log(`  - ${k} (${AGENTS[k].label})`));
     console.log("\\nConfirm installation?\\n");
@@ -181,16 +181,16 @@ async function confirmMenu(selected) {
   return new Promise((resolve) => {
     const onData = (ch) => {
       if (ch === "\\u0003") { cleanup(); resolve("cancel"); return; }
-      if (ch === "\\x1b[A") { cursor = (cursor - 1 + options.length) % options.length; render(); }
-      else if (ch === "\\x1b[B") { cursor = (cursor + 1) % options.length; render(); }
+      if (ch === "\x1b[A") { cursor = (cursor - 1 + options.length) % options.length; render(); }
+      else if (ch === "\x1b[B") { cursor = (cursor + 1) % options.length; render(); }
       else if (ch === "\\r" || ch === "\\n") { cleanup(); resolve(options[cursor].toLowerCase()); }
-      else if (ch === "q" || ch === "\\x1b") { cleanup(); resolve("cancel"); }
+      else if (ch === "q" || ch === "\x1b") { cleanup(); resolve("cancel"); }
     };
     const cleanup = () => {
       process.stdin.setRawMode(false);
       process.stdin.pause();
       process.stdin.removeListener("data", onData);
-      process.stdout.write("\\x1b[2J\\x1b[H");
+      process.stdout.write("\x1b[2J\x1b[H");
     };
     process.stdin.on("data", onData);
     render();
