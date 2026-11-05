@@ -3,8 +3,7 @@
 An AI agent skill for building readable, inclusive interfaces.
 This package installs the skill into your coding agent with one command.
 
-> **Status:** planned. The package name is a placeholder.
-> Check that it is free on npm before you publish.
+Published on npm as [`dyslexia-friendly-ui`](https://www.npmjs.com/package/dyslexia-friendly-ui).
 
 ## What the skill does
 
@@ -63,7 +62,6 @@ The installer auto-detects these by their folders or files.
 | GitHub Copilot | `.github/copilot-instructions.md` | Add a marked block |
 | Gemini CLI | `GEMINI.md` or `~/.gemini/` | Add a marked block |
 | Windsurf | `.windsurf/` | Write a rule file in `.windsurf/rules/` |
-| Cline | `.clinerules` | Add a marked block or rule file |
 
 Anything else: use `--path` to copy the skill to a folder you choose.
 
@@ -99,16 +97,10 @@ npx dyslexia-friendly-ui uninstall       # remove what this tool installed
 
 ```
 dyslexia-friendly-ui/
-├─ bin/
-│  └─ cli.js            # entry point (shebang, parses flags)
-├─ src/
-│  ├─ detect.js         # finds installed agents
-│  ├─ agents.js         # one adapter per agent
-│  ├─ install.js        # copy / append / diff logic
-│  └─ uninstall.js
-├─ skill/
-│  └─ SKILL.md          # the skill itself
-├─ AGENT_INSTALL.md     # instructions for AI agents
+│ ├─ bin/cli.js           # the whole CLI (no dependencies)
+│ ├─ skill/SKILL.md       # the skill itself
+│ ├─ tests/smoke.js       # `npm test` check
+│ ├─ AGENT_INSTALL.md     # instructions for AI agents
 ├─ package.json
 ├─ LICENSE
 └─ README.md
@@ -121,12 +113,13 @@ Only the fields that matter here. Check each against the current npm docs.
 ```json
 {
   "name": "dyslexia-friendly-ui",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Install the dyslexia-friendly UI skill into your AI coding agent.",
   "bin": { "dyslexia-friendly-ui": "bin/cli.js" },
-  "files": ["bin", "src", "skill", "AGENT_INSTALL.md"],
+  "files": ["bin", "skill", "AGENT_INSTALL.md", "LICENSE"],
   "engines": { "node": ">=18" },
   "license": "MIT",
+  "repository": "github:hot-hilux21/dyslexia-friendly-ui",
   "keywords": ["accessibility", "dyslexia", "agent-skill", "a11y"]
 }
 ```
@@ -149,8 +142,6 @@ See [`AGENT_INSTALL.md`](./AGENT_INSTALL.md) for the full steps.
 ## Build and publish
 
 ```bash
-npm install
-npm test
 npm pack --dry-run     # check what will be published
 npm login
 npm publish            # add --access public only if the name is scoped (@you/name)
@@ -159,8 +150,8 @@ npm publish            # add --access public only if the name is scoped (@you/na
 ## Contributing
 
 1. Fork the repo.
-2. Add or fix an adapter in `src/agents.js`.
-3. Test on a clean folder with `--dry-run`.
+2. Add or fix an adapter in `bin/cli.js` (the `AGENTS` map).
+3. Test on a clean folder with `--dry-run` and run `npm test`.
 4. Open a pull request. State which agent versions you tested.
 
 ## Honest limits
@@ -171,4 +162,4 @@ npm publish            # add --access public only if the name is scoped (@you/na
 
 ## Licence
 
-To be chosen. See `LICENSE`.
+MIT. See [`LICENSE`](./LICENSE).
