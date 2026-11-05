@@ -146,8 +146,8 @@ async function selectAgents(items, preselected) {
     console.log("◆  Which agents do you want to install to?\n");
     const f = filtered();
     if (!search) {
-      const detected = items.filter((k) => detected(AGENTS[k]));
-      const available = items.filter((k) => !detected(AGENTS[k]));
+      const detectedItems = items.filter((k) => detected(AGENTS[k]));
+      const availableItems = items.filter((k) => !detected(AGENTS[k]));
       const renderGroup = (title, group) => {
         if (!group.length) return;
         console.log("── " + title + " ──\n");
@@ -161,8 +161,8 @@ async function selectAgents(items, preselected) {
         });
         console.log("");
       };
-      renderGroup("Detected", detected);
-      renderGroup("Available to install", available);
+      renderGroup("Detected", detectedItems);
+      renderGroup("Available to install", availableItems);
     } else {
       console.log("Search: " + search + "\n");
       f.forEach((k, i) => {
