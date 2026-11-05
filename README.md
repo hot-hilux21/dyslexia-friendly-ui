@@ -123,7 +123,7 @@ Only the fields that matter here. Check each against the current npm docs.
 ```json
 {
   "name": "dyslexia-friendly-ui",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Install the dyslexia-friendly UI skill into your AI coding agent.",
   "bin": { "dyslexia-friendly-ui": "bin/cli.js" },
   "files": ["bin", "skill", "AGENT_INSTALL.md", "LICENSE"],

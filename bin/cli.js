@@ -38,7 +38,20 @@ const force = flag("--force");
 const block = () => `${START}\n${BODY.trim()}\n${END}\n`;
 const target = (a) => path.join(base, ...((flag("--global") && a.globalRel) || a.rel));
 const usable = (a) => !flag("--global") || a.global;
-const detected = (a) => usable(a) && a.detect.some((d) => fs.existsSync(path.join(base, d)));
+const detected = (a) => {
+  if (!usable(a)) return false;
+  if (a.detect.some((d) => fs.existsSync(path.join(base, d)))) return true;
+  // A globally installed agent counts as detected even in a project folder.
+  if (a.global) {
+    const home = os.homedir();
+    if (a.detect.some((d) => fs.existsSync(path.join(home, d)))) return true;
+    if (a.globalRel && a.globalRel.length) {
+      const dir = path.join(home, ...a.globalRel.slice(0, -1));
+      if (fs.existsSync(dir)) return true;
+    }
+  }
+  return false;
+};
 // "file" agents own the whole file, so its presence means installed.
 const installed = (a) => {
   const file = target(a);
