@@ -149,31 +149,63 @@ async function main() {
 
   const all = Object.keys(AGENTS);
   const found = all.filter((k) => detected(AGENTS[k]));
+  const isInstalled = (k) => installed(AGENTS[k]);
+  const notInstalled = (k) => !isInstalled(k);
+  const usableAll = all.filter((k) => usable(AGENTS[k]));
+  const installedList = usableAll.filter(isInstalled);
+  const detectedNotInstalled = found.filter(notInstalled);
+  const available = usableAll.filter((k) => !found.includes(k));
+
+  function printStatus() {
+    console.log("Installed:");
+    if (installedList.length) installedList.forEach((k) => console.log(`  ${k} (${AGENTS[k].label})`));
+    else console.log("  (none)");
+    console.log("Detected, not installed:");
+    if (detectedNotInstalled.length) detectedNotInstalled.forEach((k) => console.log(`  ${k} (${AGENTS[k].label})`));
+    else console.log("  (none)");
+    console.log("Available to install (optional):");
+    if (available.length) available.forEach((k) => console.log(`  ${k} (${AGENTS[k].label})`));
+    else console.log("  (none)");
+  }
+
   if (flag("--list")) {
-    if (!found.length) return console.log("No supported agents detected here.");
-    for (const k of found) console.log(`${k} (${AGENTS[k].label}) — ${installed(AGENTS[k]) ? "installed" : "not installed"}`);
+    printStatus();
     return;
   }
   let chosen;
   if (val("--agent")) {
     const k = val("--agent");
     if (k === "all") {
-      chosen = found.length ? found : all.filter((n) => usable(AGENTS[n]));
+      chosen = usableAll.filter(notInstalled);
       if (!chosen.length) return console.error("Nothing to install. Remove --global or name an agent."), (process.exitCode = 1);
     } else {
       if (!AGENTS[k]) return console.error(`Unknown agent: ${k}. Known: ${all.join(", ")}`), (process.exitCode = 1);
       if (!usable(AGENTS[k])) return console.error(`${k} has no global config file. Run without --global.`), (process.exitCode = 1);
       chosen = [k];
     }
-  } else if (!found.length) {
-    return console.log("No supported agents detected. Use --agent <name> or --path <dir>.");
   } else if (yes || dry) {
-    chosen = found;
+    chosen = (found.length ? found : usableAll).filter(notInstalled);
+    if (!chosen.length) return console.log("Nothing to install.");
   } else {
-    console.log("Detected: " + found.join(", "));
-    chosen = [];
-    for (const k of found) if (await confirm(`Install for ${AGENTS[k].label}?`, false)) chosen.push(k);
+    printStatus();
+    console.log("\\nPress Enter to install for every agent not installed yet.");
+    console.log("Or type 'detected', agent names (comma/space), 'skip', or 'all'.");
+    const answer = await ask("Install for which agents? ");
+    if (!answer || answer === "all" || answer === "enter") {
+      chosen = usableAll.filter(notInstalled);
+    } else if (answer === "skip" || answer === "none" || answer === "n") {
+      chosen = [];
+    } else if (answer === "detected") {
+      chosen = detectedNotInstalled;
+    } else {
+      chosen = answer.split(/[\\s,]+/).filter(Boolean);
+      for (const k of chosen) {
+        if (!AGENTS[k]) return console.error(`Unknown agent: ${k}. Known: ${all.join(", ")}`), (process.exitCode = 1);
+        if (!usable(AGENTS[k])) return console.error(`${k} has no global config file. Run without --global.`), (process.exitCode = 1);
+      }
+    }
   }
+  if (!chosen.length) return console.log("Nothing installed.");
   for (const k of chosen) await install(k);
 }
 

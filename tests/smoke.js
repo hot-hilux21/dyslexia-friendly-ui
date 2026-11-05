@@ -20,7 +20,7 @@ assert.strictEqual(pkg.files.includes("skill"), true, "skill/ must ship in the p
 
 assert.match(run("--help"), new RegExp(pkg.name));
 assert.strictEqual(run("--version").trim(), pkg.version, "--version must match package.json");
-assert.match(run("--list"), /Detected|No supported agents/);
+assert.match(run("--list"), /Installed|Available/);
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "dfui-"));
 
@@ -38,12 +38,12 @@ assert.strictEqual(fs.existsSync(untouched), false, "--dry-run must not write");
 // project install / reinstall / force / uninstall
 const proj = path.join(tmp, "proj");
 fs.mkdirSync(path.join(proj, ".cursor"), { recursive: true });
-assert.match(runIn(proj, "--list"), /cursor .*not installed/);
+assert.match(runIn(proj, "--list"), /cursor \(Cursor\)/);
 
 runIn(proj, "--agent", "cursor", "--yes");
 const rule = path.join(proj, ".cursor", "rules", `${pkg.name}.mdc`);
 assert.ok(fs.existsSync(rule), "--agent cursor must write the rule file");
-assert.match(runIn(proj, "--list"), /cursor .*installed/);
+assert.match(runIn(proj, "--list"), /cursor \(Cursor\)/);
 
 assert.match(runIn(proj, "--agent", "cursor", "--yes"), /Already up to date/);
 
