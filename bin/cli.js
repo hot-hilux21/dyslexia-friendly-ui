@@ -16,12 +16,14 @@ const CURSOR_HEAD = `---\ndescription: Dyslexia-friendly UI and inclusive coding
 // kind "file": we own the whole file. kind "block": we own a marked block in a shared file.
 // Paths are from memory. Verify against each tool's current docs.
 const AGENTS = {
-  claude:   { label: "Claude Code",    kind: "file",  detect: [".claude"], rel: [".claude", "skills", NAME, "SKILL.md"], content: SKILL, global: true },
+  claude:   { label: "Claude Code",    kind: "file",  detect: ["CLAUDE.md", path.join(".claude", "settings.json"), path.join(".claude", "settings.local.json")], rel: [".claude", "skills", NAME, "SKILL.md"], content: SKILL, global: true, globalRel: [".claude", "skills", NAME, "SKILL.md"] },
   cursor:   { label: "Cursor",         kind: "file",  detect: [".cursor"], rel: [".cursor", "rules", NAME + ".mdc"], content: CURSOR_HEAD + BODY },
   windsurf: { label: "Windsurf",       kind: "file",  detect: [".windsurf"], rel: [".windsurf", "rules", NAME + ".md"], content: BODY },
-  codex:    { label: "Codex CLI",      kind: "block", detect: ["AGENTS.md", ".codex"], rel: ["AGENTS.md"], globalRel: [".codex", "AGENTS.md"], global: true },
+  codex:    { label: "Codex CLI",      kind: "block", detect: [".codex"], rel: ["AGENTS.md"], globalRel: [".codex", "AGENTS.md"], global: true },
   copilot:  { label: "GitHub Copilot", kind: "block", detect: [path.join(".github", "copilot-instructions.md"), ".vscode"], rel: [".github", "copilot-instructions.md"] },
   gemini:   { label: "Gemini CLI",     kind: "block", detect: ["GEMINI.md", ".gemini"], rel: ["GEMINI.md"], globalRel: [".gemini", "GEMINI.md"], global: true },
+  opencode: { label: "OpenCode",       kind: "file",  detect: [".opencode", "opencode.json"], rel: [".opencode", "skills", NAME, "SKILL.md"], content: SKILL, global: true, globalRel: [".config", "opencode", "skills", NAME, "SKILL.md"] },
+  hermes:   { label: "Hermes",         kind: "file",  detect: [".hermes"], rel: [".hermes", "skills", NAME, "SKILL.md"], content: SKILL, global: true, globalRel: [".hermes", "skills", NAME, "SKILL.md"] },
 };
 
 const args = process.argv.slice(2);

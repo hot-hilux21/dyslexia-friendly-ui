@@ -56,12 +56,14 @@ The installer auto-detects these by their folders or files.
 
 | Agent | Detected by | Install method |
 |---|---|---|
-| Claude Code | `.claude/` or `~/.claude/` | Copy to `skills/dyslexia-friendly-ui/SKILL.md` |
+| Claude Code | `CLAUDE.md` or `.claude/settings*.json` | Copy to `skills/dyslexia-friendly-ui/SKILL.md` |
 | Cursor | `.cursor/` | Write a rule file in `.cursor/rules/` |
-| Codex CLI | `AGENTS.md` or `~/.codex/` | Add a marked block to `AGENTS.md` |
-| GitHub Copilot | `.github/copilot-instructions.md` | Add a marked block |
-| Gemini CLI | `GEMINI.md` or `~/.gemini/` | Add a marked block |
+| Codex CLI | `.codex/` | Add a marked block to `AGENTS.md` |
+| GitHub Copilot | `.github/copilot-instructions.md` or `.vscode/` | Add a marked block |
+| Gemini CLI | `GEMINI.md` or `.gemini/` | Add a marked block |
 | Windsurf | `.windsurf/` | Write a rule file in `.windsurf/rules/` |
+| OpenCode | `.opencode/` or `opencode.json` | Copy to `skills/dyslexia-friendly-ui/SKILL.md` |
+| Hermes | `.hermes/` | Copy to `skills/dyslexia-friendly-ui/SKILL.md` |
 
 Anything else: use `--path` to copy the skill to a folder you choose.
 
@@ -121,7 +123,7 @@ Only the fields that matter here. Check each against the current npm docs.
 ```json
 {
   "name": "dyslexia-friendly-ui",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Install the dyslexia-friendly UI skill into your AI coding agent.",
   "bin": { "dyslexia-friendly-ui": "bin/cli.js" },
   "files": ["bin", "skill", "AGENT_INSTALL.md", "LICENSE"],

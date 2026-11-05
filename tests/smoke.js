@@ -71,7 +71,17 @@ const whole = path.join(tmp, "whole");
 fs.mkdirSync(whole, { recursive: true });
 runIn(whole, "--agent", "all", "--yes");
 assert.ok(fs.existsSync(path.join(whole, ".windsurf", "rules", `${pkg.name}.md`)), "--agent all must install every agent");
-assert.match(runIn(whole, "uninstall", "--yes"), /Removed 6 item/);
+assert.match(runIn(whole, "uninstall", "--yes"), /Removed 8 item/);
+
+// opencode + hermes install into their skill folders
+const extra = path.join(tmp, "extra");
+fs.mkdirSync(path.join(extra, ".opencode"), { recursive: true });
+fs.mkdirSync(path.join(extra, ".hermes"), { recursive: true });
+runIn(extra, "--agent", "opencode", "--yes");
+runIn(extra, "--agent", "hermes", "--yes");
+assert.ok(fs.existsSync(path.join(extra, ".opencode", "skills", pkg.name, "SKILL.md")));
+assert.ok(fs.existsSync(path.join(extra, ".hermes", "skills", pkg.name, "SKILL.md")));
+runIn(extra, "uninstall", "--yes");
 
 // bad input fails loudly
 assert.throws(() => runIn(whole, "--agent", "nope"), (e) => /Unknown agent: nope/.test(e.stderr));
