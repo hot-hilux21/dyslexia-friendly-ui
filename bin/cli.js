@@ -120,37 +120,94 @@ async function uninstall() {
   console.log(removed ? `\nRemoved ${removed} item(s).` : "\nNothing removed.");
 }
 
-async function interactiveSelect(items, preselected) {
+async function selectAgents(items, preselected) {
   if (!process.stdin.isTTY) return null;
-  let cursor = 0;
   const selected = new Set(preselected);
+  let cursor = 0;
+  let search = "";
   process.stdin.setRawMode(true);
   process.stdin.resume();
   process.stdin.setEncoding("utf8");
-  const toggle = (k) => { if (selected.has(k)) selected.delete(k); else selected.add(k); };
-  const toggleAll = () => {
-    const allOn = items.every((k) => selected.has(k));
-    items.forEach((k) => (allOn ? selected.delete(k) : selected.add(k)));
+
+  const filtered = () => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((k) => k.toLowerCase().includes(q) || AGENTS[k].label.toLowerCase().includes(q));
   };
+  const clampCursor = () => {
+    const f = filtered();
+    if (!f.length) cursor = 0;
+    else if (cursor >= f.length) cursor = f.length - 1;
+  };
+  const toggle = (k) => { if (selected.has(k)) selected.delete(k); else selected.add(k); };
+
   const render = () => {
     process.stdout.write("\x1b[2J\x1b[H");
-    console.log("Select agents to install (↑/↓ move, space toggle, a all, Enter confirm, q cancel)\\n");
-    items.forEach((k, i) => {
-      const mark = selected.has(k) ? "x" : " ";
-      const ptr = i === cursor ? ">" : " ";
-      const status = installed(AGENTS[k]) ? "installed" : "not installed";
-      console.log(`${ptr} [${mark}] ${k} (${AGENTS[k].label}) — ${status}`);
-    });
+    console.log("◆  Which agents do you want to install to?\n");
+    const f = filtered();
+    if (!search) {
+      const detected = items.filter((k) => detected(AGENTS[k]));
+      const available = items.filter((k) => !detected(AGENTS[k]));
+      const renderGroup = (title, group) => {
+        if (!group.length) return;
+        console.log("── " + title + " ──\n");
+        group.forEach((k) => {
+          if (!f.includes(k)) return;
+          const idx = f.indexOf(k);
+          const ptr = idx === cursor ? "❯" : " ";
+          const mark = selected.has(k) ? "●" : "○";
+          const status = installed(AGENTS[k]) ? "installed" : "not installed";
+          console.log(ptr + " " + mark + " " + k + " (" + AGENTS[k].label + ") — " + status);
+        });
+        console.log("");
+      };
+      renderGroup("Detected", detected);
+      renderGroup("Available to install", available);
+    } else {
+      console.log("Search: " + search + "\n");
+      f.forEach((k, i) => {
+        const ptr = i === cursor ? "❯" : " ";
+        const mark = selected.has(k) ? "●" : "○";
+        const status = installed(AGENTS[k]) ? "installed" : "not installed";
+        console.log(ptr + " " + mark + " " + k + " (" + AGENTS[k].label + ") — " + status);
+      });
+      if (!f.length) console.log("  (no matches)");
+      console.log("");
+    }
+    console.log("Search: " + search);
+    console.log("↑↓ move, space select, enter confirm, esc clear, q cancel\n");
+    const sel = Array.from(selected);
+    const preview = sel.slice(0, 3).join(", ") + (sel.length > 3 ? " +" + (sel.length - 3) + " more" : "");
+    console.log("Selected (" + selected.size + "): " + (preview || "(none)"));
   };
+
   return new Promise((resolve) => {
     const onData = (ch) => {
-      if (ch === "\\u0003") { cleanup(); resolve([]); return; }
-      if (ch === "\x1b[A") { cursor = (cursor - 1 + items.length) % items.length; render(); }
-      else if (ch === "\x1b[B") { cursor = (cursor + 1) % items.length; render(); }
-      else if (ch === " ") { toggle(items[cursor]); render(); }
-      else if (ch === "a") { toggleAll(); render(); }
-      else if (ch === "\\r" || ch === "\\n") { cleanup(); resolve(Array.from(selected)); }
-      else if (ch === "q" || ch === "\x1b") { cleanup(); resolve([]); }
+      if (ch === "\u0003") { cleanup(); resolve([]); return; }
+      if (ch === "\x1b[A") { cursor = (cursor - 1 + filtered().length) % Math.max(1, filtered().length); render(); }
+      else if (ch === "\x1b[B") { cursor = (cursor + 1) % Math.max(1, filtered().length); render(); }
+      else if (ch === " ") {
+        const f = filtered();
+        if (f.length) toggle(f[cursor]);
+        render();
+      } else if (ch === "\x1b") {
+        if (search) { search = ""; clampCursor(); render(); }
+        else { cleanup(); resolve([]); }
+      } else if (ch === "\r" || ch === "\n") {
+        cleanup();
+        resolve(Array.from(selected));
+      } else if (ch === "q") {
+        cleanup();
+        resolve([]);
+      } else if (ch === "\x7f" || ch === "\b") {
+        search = search.slice(0, -1);
+        clampCursor();
+        render();
+      } else if (ch.length === 1 && ch >= " " && ch <= "~") {
+        search += ch;
+        clampCursor();
+        render();
+      }
     };
     const cleanup = () => {
       process.stdin.setRawMode(false);
@@ -159,6 +216,7 @@ async function interactiveSelect(items, preselected) {
       process.stdout.write("\x1b[2J\x1b[H");
     };
     process.stdin.on("data", onData);
+    clampCursor();
     render();
   });
 }
@@ -172,18 +230,18 @@ async function confirmMenu(selected) {
   process.stdin.setEncoding("utf8");
   const render = () => {
     process.stdout.write("\x1b[2J\x1b[H");
-    console.log("Selected agents:\\n");
-    selected.forEach((k) => console.log(`  - ${k} (${AGENTS[k].label})`));
-    console.log("\\nConfirm installation?\\n");
-    options.forEach((o, i) => console.log(`${i === cursor ? ">" : " "} ${o}`));
-    console.log("\\n(↑/↓ move, Enter select)");
+    console.log("Selected agents:\n");
+    selected.forEach((k) => console.log("  - " + k + " (" + AGENTS[k].label + ")"));
+    console.log("\nConfirm installation?\n");
+    options.forEach((o, i) => console.log((i === cursor ? ">" : " ") + " " + o));
+    console.log("\n(↑/↓ move, Enter select)");
   };
   return new Promise((resolve) => {
     const onData = (ch) => {
-      if (ch === "\\u0003") { cleanup(); resolve("cancel"); return; }
+      if (ch === "\u0003") { cleanup(); resolve("cancel"); return; }
       if (ch === "\x1b[A") { cursor = (cursor - 1 + options.length) % options.length; render(); }
       else if (ch === "\x1b[B") { cursor = (cursor + 1) % options.length; render(); }
-      else if (ch === "\\r" || ch === "\\n") { cleanup(); resolve(options[cursor].toLowerCase()); }
+      else if (ch === "\r" || ch === "\n") { cleanup(); resolve(options[cursor].toLowerCase()); }
       else if (ch === "q" || ch === "\x1b") { cleanup(); resolve("cancel"); }
     };
     const cleanup = () => {
@@ -197,15 +255,15 @@ async function confirmMenu(selected) {
   });
 }
 
-async function wizard(usableAll, notInstalled) {
+async function wizard(usableAll) {
   if (!process.stdin.isTTY) return null;
-  let selection = await interactiveSelect(usableAll, usableAll.filter(notInstalled));
+  let selection = await selectAgents(usableAll, usableAll.filter((k) => !installed(AGENTS[k])));
   if (!selection || !selection.length) return [];
   while (true) {
     const action = await confirmMenu(selection);
     if (action === "confirm") return selection;
     if (action === "back") {
-      selection = await interactiveSelect(usableAll, new Set(selection));
+      selection = await selectAgents(usableAll, selection);
       if (!selection || !selection.length) return [];
       continue;
     }
@@ -280,7 +338,7 @@ async function main() {
     chosen = (found.length ? found : usableAll).filter(notInstalled);
     if (!chosen.length) return console.log("Nothing to install.");
   } else {
-    const picked = await wizard(usableAll, (k) => !isInstalled(k));
+    const picked = await wizard(usableAll);
     if (picked === null) {
       chosen = (found.length ? found : usableAll).filter((k) => !isInstalled(k));
     } else {
