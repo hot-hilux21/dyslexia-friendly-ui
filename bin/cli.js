@@ -120,6 +120,99 @@ async function uninstall() {
   console.log(removed ? `\nRemoved ${removed} item(s).` : "\nNothing removed.");
 }
 
+async function interactiveSelect(items, preselected) {
+  if (!process.stdin.isTTY) return null;
+  let cursor = 0;
+  const selected = new Set(preselected);
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
+  const toggle = (k) => { if (selected.has(k)) selected.delete(k); else selected.add(k); };
+  const toggleAll = () => {
+    const allOn = items.every((k) => selected.has(k));
+    items.forEach((k) => (allOn ? selected.delete(k) : selected.add(k)));
+  };
+  const render = () => {
+    process.stdout.write("\\x1b[2J\\x1b[H");
+    console.log("Select agents to install (↑/↓ move, space toggle, a all, Enter confirm, q cancel)\\n");
+    items.forEach((k, i) => {
+      const mark = selected.has(k) ? "x" : " ";
+      const ptr = i === cursor ? ">" : " ";
+      const status = installed(AGENTS[k]) ? "installed" : "not installed";
+      console.log(`${ptr} [${mark}] ${k} (${AGENTS[k].label}) — ${status}`);
+    });
+  };
+  return new Promise((resolve) => {
+    const onData = (ch) => {
+      if (ch === "\\u0003") { cleanup(); resolve([]); return; }
+      if (ch === "\\x1b[A") { cursor = (cursor - 1 + items.length) % items.length; render(); }
+      else if (ch === "\\x1b[B") { cursor = (cursor + 1) % items.length; render(); }
+      else if (ch === " ") { toggle(items[cursor]); render(); }
+      else if (ch === "a") { toggleAll(); render(); }
+      else if (ch === "\\r" || ch === "\\n") { cleanup(); resolve(Array.from(selected)); }
+      else if (ch === "q" || ch === "\\x1b") { cleanup(); resolve([]); }
+    };
+    const cleanup = () => {
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      process.stdin.removeListener("data", onData);
+      process.stdout.write("\\x1b[2J\\x1b[H");
+    };
+    process.stdin.on("data", onData);
+    render();
+  });
+}
+
+async function confirmMenu(selected) {
+  if (!process.stdin.isTTY) return "confirm";
+  const options = ["CONFIRM", "Back", "Cancel"];
+  let cursor = 0;
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
+  const render = () => {
+    process.stdout.write("\\x1b[2J\\x1b[H");
+    console.log("Selected agents:\\n");
+    selected.forEach((k) => console.log(`  - ${k} (${AGENTS[k].label})`));
+    console.log("\\nConfirm installation?\\n");
+    options.forEach((o, i) => console.log(`${i === cursor ? ">" : " "} ${o}`));
+    console.log("\\n(↑/↓ move, Enter select)");
+  };
+  return new Promise((resolve) => {
+    const onData = (ch) => {
+      if (ch === "\\u0003") { cleanup(); resolve("cancel"); return; }
+      if (ch === "\\x1b[A") { cursor = (cursor - 1 + options.length) % options.length; render(); }
+      else if (ch === "\\x1b[B") { cursor = (cursor + 1) % options.length; render(); }
+      else if (ch === "\\r" || ch === "\\n") { cleanup(); resolve(options[cursor].toLowerCase()); }
+      else if (ch === "q" || ch === "\\x1b") { cleanup(); resolve("cancel"); }
+    };
+    const cleanup = () => {
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      process.stdin.removeListener("data", onData);
+      process.stdout.write("\\x1b[2J\\x1b[H");
+    };
+    process.stdin.on("data", onData);
+    render();
+  });
+}
+
+async function wizard(usableAll, notInstalled) {
+  if (!process.stdin.isTTY) return null;
+  let selection = await interactiveSelect(usableAll, usableAll.filter(notInstalled));
+  if (!selection || !selection.length) return [];
+  while (true) {
+    const action = await confirmMenu(selection);
+    if (action === "confirm") return selection;
+    if (action === "back") {
+      selection = await interactiveSelect(usableAll, new Set(selection));
+      if (!selection || !selection.length) return [];
+      continue;
+    }
+    return [];
+  }
+}
+
 async function main() {
   if (flag("--help") || flag("-h")) {
     return console.log(
@@ -187,22 +280,11 @@ async function main() {
     chosen = (found.length ? found : usableAll).filter(notInstalled);
     if (!chosen.length) return console.log("Nothing to install.");
   } else {
-    printStatus();
-    console.log("\\nPress Enter to install for every agent not installed yet.");
-    console.log("Or type 'detected', agent names (comma/space), 'skip', or 'all'.");
-    const answer = await ask("Install for which agents? ");
-    if (!answer || answer === "all" || answer === "enter") {
-      chosen = usableAll.filter(notInstalled);
-    } else if (answer === "skip" || answer === "none" || answer === "n") {
-      chosen = [];
-    } else if (answer === "detected") {
-      chosen = detectedNotInstalled;
+    const picked = await wizard(usableAll, (k) => !isInstalled(k));
+    if (picked === null) {
+      chosen = (found.length ? found : usableAll).filter((k) => !isInstalled(k));
     } else {
-      chosen = answer.split(/[\\s,]+/).filter(Boolean);
-      for (const k of chosen) {
-        if (!AGENTS[k]) return console.error(`Unknown agent: ${k}. Known: ${all.join(", ")}`), (process.exitCode = 1);
-        if (!usable(AGENTS[k])) return console.error(`${k} has no global config file. Run without --global.`), (process.exitCode = 1);
-      }
+      chosen = picked;
     }
   }
   if (!chosen.length) return console.log("Nothing installed.");
